@@ -1,11 +1,7 @@
 import 'package:bakeryadminapp/Auth/signup.dart';
-import 'package:bakeryadminapp/utilis/utilis.dart';
-import 'package:bakeryadminapp/widgets/buttons.dart';
+import 'package:bakeryadminapp/bottom_bar/bottom_bar.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
-import 'package:get/get_state_manager/src/simple/get_state.dart';
-
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -15,158 +11,111 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  bool iconclicked = false;
-  TextEditingController emailcontroller = TextEditingController();
-  TextEditingController passwordcontroller = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _isLoading = false;
 
-  GlobalKey<FormState> formkey = GlobalKey<FormState>();
+  Future<void> loginUser() async {
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passController.text.trim(),
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const BottomBarScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Login failed')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   @override
-
   Widget build(BuildContext context) {
     return Scaffold(
-        body:  Container(
-          height: ScreenUtil().screenHeight,
-          width: ScreenUtil().screenWidth,
-          color: Color(0xffEEEEE6),
-          child: Form(
-            key: formkey,
+      appBar: AppBar(title: const Text('Login'), backgroundColor: const Color(0xffEEEEE6)),
+      backgroundColor: const Color(0xffEEEEE6),
+      body: SingleChildScrollView(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(
-                  height: 55.h,
-                ),
-                AppBarClass(
-                  text: "Sign In",
-                  color: Color(0xff20402A),
-                  iconcolor: Color(0xff20402A),
-                ),
-                SizedBox(
-                  height: 150.h,
-                ),
-              TextFormFieldWidget(
-                        onChanged: (v) {},
-                        textEditingController: emailcontroller,
-                        text: "Email",
-                        width: 319.w,
-                        validator: (value) {
-                          bool emailcontroller = RegExp(
-                                  r"^[a-zA-Z0-9.a-zA-Z0-9.!#$%&'*+-/=?^_`{|}~]+@[a-zA-Z0-9]+\.[a-zA-Z]+")
-                              .hasMatch(value!);
-                          if (value!.isEmpty) {
-                            return "Please enter Email";
-                          }
-                          if (!emailcontroller) {
-                            return "Please enter valid Email";
-                          }
+                const Text("Email"), const SizedBox(height: 8),
+                TextFormField(controller: _emailController, decoration: _inputDecoration()),
 
-                          return null;
-                        },
-                        align: TextAlign.start,
-                        Fontsize: 16.sp,
-                      ),
-                    
-                SizedBox(
-                  height: 29.h,
-                ),
-                TextFormFieldWidget(
-                        onChanged: (v) {
-                         
-                        },
-                        textEditingController: passwordcontroller,
-                        text: "Password",
-                        width: 319.w,
-                        obscureText: iconclicked,
-                        obscuringCharacter: "*",
-                        suffixicon: IconButton(
-                          onPressed: () {
-                         
-                          
-                          },
-                          icon: Icon(
-                            iconclicked
-                                  ? Icons.visibility
-                                  : Icons.visibility_off,
-                              color: Color.fromARGB(255, 0, 0, 0)
-                                  .withOpacity(0.35)),
-                        ),
-                        validator: (value) {
-                          if (value!.isEmpty) {
-                            return "Please enter password";
-                          }
-                          return null;
-                        },
-                        align: TextAlign.start,
-                        Fontsize: 16.sp,
-                      ),
-                 
-                SizedBox(
-                  height: 18.h,
-                ),
-                InkWell(
-                  onTap: () {
-                   //here to go on forgot pass 
-                  },
-                  child: Container(
-                    width: ScreenUtil().screenWidth * 0.85,
-                    child: Text("Forget Password?",
-                        textAlign: TextAlign.end,
-                        style: TextStyle(
-                          fontSize: 13.62.sp,
-                          fontWeight: FontWeight.normal,
-                          color: Colors.black,
-                        )),
+                const SizedBox(height: 20), const Text("Password"), const SizedBox(height: 8),
+                TextFormField(
+                  controller: _passController,
+                  obscureText: _obscurePassword,
+                  decoration: _inputDecoration().copyWith(
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
                   ),
                 ),
-                SizedBox(
-                  height: 50.h,
+
+                const SizedBox(height: 10),
+                const Align(
+                  alignment: Alignment.centerRight,
+                  child: Text("Forget your password?", style: TextStyle(fontStyle: FontStyle.italic)),
                 ),
-               CustomButtons(
-                          borderRadius: 7.78.r,
-                          child: ButtonText(
-                            color: Color(0xffFBFBF0),
-                            text: 'Sign In',
-                            Font: FontWeight.w600,
-                            fontsize: 13.62.sp,
-                          ),
-                          width: 119.w,
-                          height: 36.27.h,
-                          onPressed: () async {
-                            if (formkey.currentState!.validate()) {
-                             
-                             
-                            }
-                          },
-                          backcolor: emailcontroller.text.isNotEmpty &&
-                                 passwordcontroller.text.isNotEmpty
-                              ? ButtonsColors.secondaryColor
-                              : Colors.grey),
-                    
-                SizedBox(
-                  height: 40.h,
+
+                const SizedBox(height: 30),
+                Align(
+                  alignment: Alignment.center,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : loginUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green[800],
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 14),
+                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text("Proceed", style: TextStyle(color: Colors.white)),
+                  ),
                 ),
-                InkWell(
-                  onTap: () {
-                   Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) => SignUpScreen() ));
-                  },
-                  child: Text(
-                    "Didn’t have any accounts? Click here to\n create new",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 13.62.sp,
-                      fontWeight: FontWeight.normal,
-                      color: Colors.black,
+
+                const SizedBox(height: 30),
+                Align(
+                  alignment: Alignment.center,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pushReplacement(
+                        context, MaterialPageRoute(builder: (_) => const SignUpScreen())),
+                    child: const Text.rich(
+                      TextSpan(
+                        text: "Didn't have any accounts? ",
+                        children: [
+                          TextSpan(text: "Click here", style: TextStyle(color: Colors.blue)),
+                          TextSpan(text: " to create new"),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ],
             ),
           ),
-        )
-      
-   
+        ),
+      ),
+    );
+  }
+
+  InputDecoration _inputDecoration() {
+    return const InputDecoration(
+      filled: true,
+      fillColor: Colors.white,
+      border: InputBorder.none,
     );
   }
 }

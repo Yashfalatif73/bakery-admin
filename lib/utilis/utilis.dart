@@ -197,7 +197,7 @@ class TextFormFieldForListings extends StatelessWidget {
           text,
           textAlign: align,
           style: TextStyle(
-            color: Color(0xff898A8D),
+            color: const Color(0xff898A8D),
             fontSize: Fontsize,
             fontWeight: FontWeight.w400,
           ),
@@ -261,53 +261,46 @@ class TextFormFieldForListings extends StatelessWidget {
 }
 
 class TopNavBarClass extends StatelessWidget {
-  TopNavBarClass({
+  const TopNavBarClass({
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      leading: SizedBox(),
+      leading: const SizedBox(),
       toolbarHeight: 80,
-      backgroundColor: Color(0xffEEEEE6),
+      backgroundColor: const Color(0xffEEEEE6),
       actions: [
-        Container(
+        SizedBox(
           width: MediaQuery.of(context).size.width,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              Text(
+              const Text(
                 "Logo",
                 style: TextStyle(fontSize: 10, color: Colors.black),
               ),
               CustomButtons(
                   borderRadius: 100.r,
-                  child: ButtonText(
-                    color: Color(0xff20402A),
-                    text: 'Add Items',
-                    Font: FontWeight.w400,
-                    fontsize: 12.34.sp,
-                  ),
                   width: 136.67.w,
                   height: 36.54.h,
                   onPressed: () {
-                     Get.to(() => AddItemsScreen());
+                    Get.to(() => const AddItemsScreen());
                     // index == 1;
                     // setState(() {});
                   },
-                  backcolor: Colors.white
+                  backcolor: Colors.white,
+                  child: ButtonText(
+                    color: const Color(0xff20402A),
+                    text: 'Add Items',
+                    Font: FontWeight.w400,
+                    fontsize: 12.34.sp,
+                  )
                   // index == 1 ? AppColors.primaryColor : Colors.white,
                   ),
               CustomButtons(
                 borderRadius: 100.r,
-                child: ButtonText(
-                  color: Color(0xff20402A),
-                  //  color: index == 0 ? Color(0xff20402A) : Colors.white,
-                  text: 'View Listing',
-                  Font: FontWeight.w400,
-                  fontsize: 12.34.sp,
-                ),
                 width: 136.67.w,
                 height: 36.54.h,
                 onPressed: () {
@@ -315,6 +308,13 @@ class TopNavBarClass extends StatelessWidget {
                   //index = 1;
                 },
                 backcolor: Colors.white,
+                child: ButtonText(
+                  color: const Color(0xff20402A),
+                  //  color: index == 0 ? Color(0xff20402A) : Colors.white,
+                  text: 'View Listing',
+                  Font: FontWeight.w400,
+                  fontsize: 12.34.sp,
+                ),
                 // index == 0 ? Colors.white : Color(0xff20402A),
               ),
             ],

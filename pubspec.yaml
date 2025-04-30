@@ -45,6 +45,8 @@ dependencies:
   email_otp: ^3.0.2
   shared_preferences: ^2.3.4
   firebase_storage: ^12.4.0
+  firebase_auth: ^5.5.3
+  provider: ^6.1.5
   
   
 

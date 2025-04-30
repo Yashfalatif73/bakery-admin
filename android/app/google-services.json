@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "455113974699",
+    "project_id": "completefoodorderingappui",
+    "storage_bucket": "completefoodorderingappui.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:455113974699:android:c7b5dbec46adb5b657a8ee",
+        "android_client_info": {
+          "package_name": "com.example.bakeryadminapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoV71MlkWKiinWVqp08Z_PlgsRQjU4r2I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:455113974699:android:a51ed4c4714a8d6757a8ee",
+        "android_client_info": {
+          "package_name": "com.example.completefoodorderingappui"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoV71MlkWKiinWVqp08Z_PlgsRQjU4r2I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
