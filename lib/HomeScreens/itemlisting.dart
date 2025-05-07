@@ -1,10 +1,10 @@
 import 'package:bakeryadminapp/HomeScreens/controllers/edit_item_controller.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 
-// Controller to manage item list state
 class ItemListController extends GetxController {
   final RxList<DocumentSnapshot> items = <DocumentSnapshot>[].obs;
   final RxInt currentPage = 0.obs;
@@ -12,22 +12,58 @@ class ItemListController extends GetxController {
   final RxInt totalPages = 0.obs;
   final RxString searchQuery = ''.obs;
   final RxBool isLoading = false.obs;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  String? currentAdminId;
 
   @override
   void onInit() {
     super.onInit();
-    fetchItems();
+    getCurrentAdminId();
   }
 
-  // Fetch items from Firestore
+  Future<void> getCurrentAdminId() async {
+    isLoading.value = true;
+    try {
+      final User? user = _auth.currentUser;
+
+      if (user != null) {
+        final adminDoc = await FirebaseFirestore.instance
+            .collection('admins')
+            .where('uid', isEqualTo: user.uid)
+            .get();
+
+        if (adminDoc.docs.isNotEmpty) {
+          currentAdminId = user.uid;
+          fetchItems();
+        } else {
+          print('User is not registered as an admin');
+        }
+      } else {
+        print('No user is currently logged in');
+      }
+    } catch (e) {
+      print('Error getting admin ID: $e');
+    } finally {
+      if (currentAdminId == null) {
+        isLoading.value = false;
+      }
+    }
+  }
+
   Future<void> fetchItems() async {
     isLoading.value = true;
     try {
+      if (currentAdminId == null) {
+        print('Cannot fetch items: No admin ID available');
+        return;
+      }
+
       final QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('items')
+          .where('adminId', isEqualTo: currentAdminId)
           .orderBy('createdAt', descending: true)
           .get();
-      
+
       items.value = snapshot.docs;
       calculateTotalPages();
     } catch (e) {
@@ -37,69 +73,83 @@ class ItemListController extends GetxController {
     }
   }
 
-  // Calculate total pages based on item count
   void calculateTotalPages() {
     totalPages.value = (items.length / itemsPerPage.value).ceil();
     if (totalPages.value == 0) totalPages.value = 1;
   }
 
-  // Get current page items
   List<DocumentSnapshot> get currentPageItems {
     int startIndex = currentPage.value * itemsPerPage.value;
     int endIndex = startIndex + itemsPerPage.value;
-    
+
     if (startIndex >= items.length) return [];
     if (endIndex > items.length) endIndex = items.length;
-    
+
     return items.sublist(startIndex, endIndex);
   }
 
-  // Navigate to next page
   void nextPage() {
     if (currentPage.value < totalPages.value - 1) {
       currentPage.value++;
     }
   }
 
-  // Navigate to previous page
   void prevPage() {
     if (currentPage.value > 0) {
       currentPage.value--;
     }
   }
 
-  // Delete item from Firestore
   Future<void> deleteItem(String itemId) async {
     try {
       await FirebaseFirestore.instance.collection('items').doc(itemId).delete();
-      await fetchItems(); // Refresh the list
+      await fetchItems();
     } catch (e) {
       print('Error deleting item: $e');
     }
   }
 
-  // Toggle item visibility
   Future<void> toggleVisibility(String itemId, bool currentVisibility) async {
     try {
       await FirebaseFirestore.instance
           .collection('items')
           .doc(itemId)
           .update({'visibility': !currentVisibility});
-      await fetchItems(); // Refresh the list
+      await fetchItems();
     } catch (e) {
       print('Error updating visibility: $e');
     }
   }
 
-  // Filter items based on search query
   void filterItems(String query) {
     searchQuery.value = query;
-    // Implement search functionality if needed
+
+    if (query.isEmpty) {
+      fetchItems();
+      return;
+    }
+
+    final filteredItems = items.where((item) {
+      final data = item.data() as Map<String, dynamic>;
+      final itemName = data['itemName']?.toString().toLowerCase() ?? '';
+      final itemDescription =
+          data['itemDescription']?.toString().toLowerCase() ?? '';
+
+      return itemName.contains(query.toLowerCase()) ||
+          itemDescription.contains(query.toLowerCase());
+    }).toList();
+
+    items.value = filteredItems;
+    calculateTotalPages();
+
+    if (currentPage.value != 0) {
+      currentPage.value = 0;
+    }
   }
 }
 
 class ItemListingScreen extends StatelessWidget {
-  ItemListingScreen({Key? key}) : super(key: key);
+  ItemListingScreen({super.key});
 
   final ItemListController controller = Get.put(ItemListController());
 
@@ -114,17 +164,13 @@ class ItemListingScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 50.h),
-            
             Padding(
               padding: EdgeInsets.symmetric(horizontal: 24.w),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Screen Title
                   _buildScreenTitle(),
                   SizedBox(height: 20.h),
-                  
-                  // Items List Container
                   _buildItemsContainer(),
                 ],
               ),
@@ -135,7 +181,6 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Screen Title Widget
   Widget _buildScreenTitle() {
     return const Text(
       "Items Listing",
@@ -147,7 +192,6 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Main Items Container
   Widget _buildItemsContainer() {
     return Container(
       height: 392.h,
@@ -157,26 +201,16 @@ class ItemListingScreen extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // Search and Filter Bar
           _buildSearchFilterBar(),
-          
-          // Table Header
           _buildTableHeader(),
-          
-          // Table Separator
           _buildDivider(),
-          
-          // Items List
           _buildItemsList(),
-          
-          // Pagination Info
           _buildPaginationInfo(),
         ],
       ),
     );
   }
 
-  // Search and Filter Bar
   Widget _buildSearchFilterBar() {
     return Container(
       height: 64.h,
@@ -186,17 +220,13 @@ class ItemListingScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Search Field
           _buildSearchField(),
-          
-          // Filter Button
           _buildFilterButton(),
         ],
       ),
     );
   }
 
-  // Search Field Widget
   Widget _buildSearchField() {
     return Container(
       width: 215.w,
@@ -236,7 +266,6 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Filter Button Widget
   Widget _buildFilterButton() {
     return Container(
       width: 67.w,
@@ -270,7 +299,6 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Table Header Widget
   Widget _buildTableHeader() {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -314,8 +342,8 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Pagination Button Widget
-  Widget _buildPaginationButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildPaginationButton(
+      {required IconData icon, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -335,7 +363,6 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Divider Widget
   Widget _buildDivider() {
     return Container(
       height: 1.h,
@@ -344,7 +371,6 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Items List Widget
   Widget _buildItemsList() {
     return Obx(() {
       if (controller.isLoading.value) {
@@ -354,7 +380,7 @@ class ItemListingScreen extends StatelessWidget {
           ),
         );
       }
-      
+
       if (controller.items.isEmpty) {
         return const Expanded(
           child: Center(
@@ -362,7 +388,7 @@ class ItemListingScreen extends StatelessWidget {
           ),
         );
       }
-      
+
       return Expanded(
         child: ListView.builder(
           itemCount: controller.currentPageItems.length,
@@ -375,10 +401,9 @@ class ItemListingScreen extends StatelessWidget {
     });
   }
 
-  // Item Row Widget
   Widget _buildItemRow(DocumentSnapshot item, BuildContext context) {
     final data = item.data() as Map<String, dynamic>;
-    
+
     return Column(
       children: [
         Padding(
@@ -389,7 +414,6 @@ class ItemListingScreen extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Item Name
                 Text(
                   data['itemName'] ?? "Unknown",
                   style: TextStyle(
@@ -399,12 +423,10 @@ class ItemListingScreen extends StatelessWidget {
                   ),
                 ),
                 SizedBox(width: 3.w),
-                
-                // Item Description (truncated)
                 SizedBox(
                   width: 100.w,
                   child: Text(
-                    data['itemDescription'] != null 
+                    data['itemDescription'] != null
                         ? (data['itemDescription'] as String).length > 10
                             ? "${(data['itemDescription'] as String).substring(0, 10)}..."
                             : data['itemDescription']
@@ -417,14 +439,11 @@ class ItemListingScreen extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                
-                // Action Buttons
                 SizedBox(
                   width: 79.w,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      // Edit Button
                       _buildActionButton(
                         color: const Color(0xff0FCB02),
                         imagePath: "images/Group 2128.png",
@@ -433,30 +452,25 @@ class ItemListingScreen extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => EditItemScreen(itemId: item.id),
+                              builder: (context) =>
+                                  EditItemScreen(itemId: item.id),
                             ),
                           ).then((_) => controller.fetchItems());
                         },
                       ),
-                      
-                      // Delete Button
                       _buildActionButton(
                         color: const Color(0xffF55F44),
                         imagePath: "images/Vector (1).png",
                         imageHeight: 10.h,
-                        onTap: () => _showDeleteConfirmationDialog(context, item.id),
+                        onTap: () =>
+                            _showDeleteConfirmationDialog(context, item.id),
                       ),
-                      
-                      // Visibility Toggle Button
                       _buildActionButton(
                         color: const Color(0xff495057),
                         imagePath: "images/Group 2415.png",
                         imageHeight: 8.h,
                         onTap: () => _showVisibilityConfirmationDialog(
-                          context, 
-                          item.id, 
-                          data['visibility'] ?? true
-                        ),
+                            context, item.id, data['visibility'] ?? true),
                       ),
                     ],
                   ),
@@ -470,7 +484,6 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Action Button Widget
   Widget _buildActionButton({
     required Color color,
     required String imagePath,
@@ -496,8 +509,8 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Delete Confirmation Dialog
-  Future<void> _showDeleteConfirmationDialog(BuildContext context, String itemId) async {
+  Future<void> _showDeleteConfirmationDialog(
+      BuildContext context, String itemId) async {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -520,21 +533,15 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Visibility Confirmation Dialog
   Future<void> _showVisibilityConfirmationDialog(
-    BuildContext context, 
-    String itemId, 
-    bool currentVisibility
-  ) async {
+      BuildContext context, String itemId, bool currentVisibility) async {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Change Visibility"),
-        content: Text(
-          currentVisibility 
-              ? "Do you want to turn off visibility of this item?" 
-              : "Do you want to turn on visibility of this item?"
-        ),
+        content: Text(currentVisibility
+            ? "Do you want to turn off visibility of this item?"
+            : "Do you want to turn on visibility of this item?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -552,21 +559,20 @@ class ItemListingScreen extends StatelessWidget {
     );
   }
 
-  // Pagination Info Widget
   Widget _buildPaginationInfo() {
     return Obx(() => Padding(
-      padding: EdgeInsets.only(right: 16.w, bottom: 8.h),
-      child: Align(
-        alignment: Alignment.bottomRight,
-        child: Text(
-          "${controller.currentPage.value + 1}/${controller.totalPages.value}",
-          style: TextStyle(
-            fontSize: 12.sp,
-            color: const Color(0xff404040),
-            fontWeight: FontWeight.w400,
+          padding: EdgeInsets.only(right: 16.w, bottom: 8.h),
+          child: Align(
+            alignment: Alignment.bottomRight,
+            child: Text(
+              "${controller.currentPage.value + 1}/${controller.totalPages.value}",
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: const Color(0xff404040),
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ),
-        ),
-      ),
-    ));
+        ));
   }
 }

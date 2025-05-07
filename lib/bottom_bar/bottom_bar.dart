@@ -1,8 +1,9 @@
 import 'dart:developer';
 import 'package:bakeryadminapp/HomeScreens/provider/user_provider.dart';
+import 'package:bakeryadminapp/manage_orders/manage_orders.dart';
 import 'package:bakeryadminapp/notifications/notifications_screen.dart';
-import 'package:bakeryadminapp/HomeScreens/additems.dart';
 import 'package:bakeryadminapp/HomeScreens/home.dart';
+import 'package:bakeryadminapp/profile_screen/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:provider/provider.dart';
@@ -45,8 +46,8 @@ class _BottomBarScreenState extends State<BottomBarScreen> {
                 children: const [
                   HomeScreen(),
                   NotificationsScreen(),
-                  AddItemsScreen(),
-                  Placeholder(),
+                  ManageOrdersScreen(),
+                  MyProfileScreen(),
                 ],
               ),
             ),

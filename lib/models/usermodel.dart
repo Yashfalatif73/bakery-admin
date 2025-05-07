@@ -1,100 +1,129 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
-import 'dart:core';
 
 class UserModel {
   String? name;
-  String? des;
-  String? price;
-  String? catg;
-  bool? allownotification;
-   String? imageurl;
-   String? id;
+  String? email;
+  String? uid;
+  double? bakeryRating;
+  int? totalRatings;
+  String? bakeryName;
+  String? bakeryDescription;
+  String? bakeryTiming;
+  String? bakeryLocation;
+  String? bakeryLatLng;
+  String? imageurl;
+
   UserModel({
     this.name,
-    this.des,
-    this.price,
-    this.catg,
-    this.allownotification,
+    this.email,
+    this.uid,
+    this.bakeryRating,
+    this.totalRatings,
+    this.bakeryName,
+    this.bakeryDescription,
+    this.bakeryTiming,
+    this.bakeryLocation,
+    this.bakeryLatLng,
     this.imageurl,
-    this.id,
   });
 
   UserModel copyWith({
     String? name,
-    String? des,
-    String? price,
-    String? catg,
-    bool? allownotification,
+    String? email,
+    String? uid,
+    double? bakeryRating,
+    int? totalRatings,
+    String? bakeryName,
+    String? bakeryDescription,
+    String? bakeryTiming,
+    String? bakeryLocation,
+    String? bakeryLatLng,
     String? imageurl,
-    String? id,
   }) {
     return UserModel(
       name: name ?? this.name,
-      des: des ?? this.des,
-      price: price ?? this.price,
-      catg: catg ?? this.catg,
-      allownotification: allownotification ?? this.allownotification,
+      email: email ?? this.email,
+      uid: uid ?? this.uid,
+      bakeryRating: bakeryRating ?? this.bakeryRating,
+      totalRatings: totalRatings ?? this.totalRatings,
+      bakeryName: bakeryName ?? this.bakeryName,
+      bakeryDescription: bakeryDescription ?? this.bakeryDescription,
+      bakeryTiming: bakeryTiming ?? this.bakeryTiming,
+      bakeryLocation: bakeryLocation ?? this.bakeryLocation,
+      bakeryLatLng: bakeryLatLng ?? this.bakeryLatLng,
       imageurl: imageurl ?? this.imageurl,
-      id: id ?? this.id,
     );
   }
 
   Map<String, dynamic> toMap() {
-    return <String, dynamic>{
+    return {
       'name': name,
-      'des': des,
-      'price': price,
-      'catg': catg,
-      'allownotification': allownotification,
+      'email': email,
+      'uid': uid,
+      'bakeryRating': bakeryRating,
+      'totalRatings': totalRatings,
+      'bakeryName': bakeryName,
+      'bakeryDescription': bakeryDescription,
+      'bakeryTiming': bakeryTiming,
+      'bakeryLocation': bakeryLocation,
+      'bakeryLatLng': bakeryLatLng,
       'imageurl': imageurl,
-      'id': id,
     };
   }
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-      name: map['name'] != null ? map['name'] as String : null,
-      des: map['des'] != null ? map['des'] as String : null,
-      price: map['price'] != null ? map['price'] as String : null,
-      catg: map['catg'] != null ? map['catg'] as String : null,
-      allownotification: map['allownotification'] != null ? map['allownotification'] as bool : null,
-      imageurl: map['imageurl'] != null ? map['imageurl'] as String : null,
-      id: map['id'] != null ? map['id'] as String : null,
+      name: map['name'],
+      email: map['email'],
+      uid: map['uid'],
+      bakeryRating: map['bakeryRating']?.toDouble(),
+      totalRatings: map['totalRatings']?.toInt(),
+      bakeryName: map['bakeryName'],
+      bakeryDescription: map['bakeryDescription'],
+      bakeryTiming: map['bakeryTiming'],
+      bakeryLocation: map['bakeryLocation'],
+      bakeryLatLng: map['bakeryLatLng'],
+      imageurl: map['imageurl'],
     );
   }
 
   String toJson() => json.encode(toMap());
 
-  factory UserModel.fromJson(String source) => UserModel.fromMap(json.decode(source) as Map<String, dynamic>);
+  factory UserModel.fromJson(String source) => UserModel.fromMap(json.decode(source));
 
   @override
   String toString() {
-    return 'UserModel(name: $name, des: $des, price: $price, catg: $catg, allownotification: $allownotification, imageurl: $imageurl, id: $id)';
+    return 'UserModel(name: $name, email: $email, uid: $uid, bakeryRating: $bakeryRating, totalRatings: $totalRatings, bakeryName: $bakeryName, bakeryDescription: $bakeryDescription, bakeryTiming: $bakeryTiming, bakeryLocation: $bakeryLocation, bakeryLatLng: $bakeryLatLng)';
   }
 
   @override
   bool operator ==(covariant UserModel other) {
-    if (identical(this, other)) return true;
-  
-    return 
-      other.name == name &&
-      other.des == des &&
-      other.price == price &&
-      other.catg == catg &&
-      other.allownotification == allownotification &&
-      other.imageurl == imageurl &&
-      other.id == id;
+    return identical(this, other) ||
+        other.name == name &&
+            other.email == email &&
+            other.uid == uid &&
+            other.bakeryRating == bakeryRating &&
+            other.totalRatings == totalRatings &&
+            other.bakeryName == bakeryName &&
+            other.bakeryDescription == bakeryDescription &&
+            other.bakeryTiming == bakeryTiming &&
+            other.bakeryLocation == bakeryLocation &&
+            other.bakeryLatLng == bakeryLatLng &&
+            other.imageurl == imageurl;
   }
 
   @override
   int get hashCode {
     return name.hashCode ^
-      des.hashCode ^
-      price.hashCode ^
-      catg.hashCode ^
-      allownotification.hashCode ^
-      imageurl.hashCode ^
-      id.hashCode;
+        email.hashCode ^
+        uid.hashCode ^
+        bakeryRating.hashCode ^
+        totalRatings.hashCode ^
+        bakeryName.hashCode ^
+        bakeryDescription.hashCode ^
+        bakeryTiming.hashCode ^
+        bakeryLocation.hashCode ^
+        bakeryLatLng.hashCode ^
+        imageurl.hashCode;
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'package:bakeryadminapp/bottom_bar/bottom_bar.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,59 +12,23 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:bakeryadminapp/widgets/buttons.dart';
 import 'package:bakeryadminapp/utilis/utilis.dart';
 
-// Item model for storing and managing data
-class ItemModel {
-  final String uid;
-  final String itemName;
-  final String itemDescription;
-  final String itemPrice;
-  final String itemCategory;
-  final bool allowNotifications;
-  final String imageUrl;
-  final bool visibility;
-  final Timestamp createdAt;
-
-  ItemModel({
-    required this.uid,
-    required this.itemName,
-    required this.itemDescription,
-    required this.itemPrice,
-    required this.itemCategory,
-    required this.allowNotifications,
-    required this.imageUrl,
-    this.visibility = true,
-    required this.createdAt,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'uid': uid,
-      'itemName': itemName,
-      'itemDescription': itemDescription,
-      'itemPrice': itemPrice,
-      'itemCategory': itemCategory,
-      'allowNotifications': allowNotifications,
-      'imageUrl': imageUrl,
-      'visibility': visibility,
-      'createdAt': createdAt,
-    };
-  }
-}
-
-// Controller to manage items
 class ItemController extends GetxController {
   final nameController = TextEditingController();
   final desController = TextEditingController();
   final priceController = TextEditingController();
   final categoryController = TextEditingController();
+  final quantityController = TextEditingController(); // New quantity controller
 
   bool isLoading = false;
   bool isclicked = true;
   String? selectedCategory;
 
-  // Images handling
   final imagesList = <File>[].obs;
   final uploadedImageUrls = <String>[].obs;
+
+  String get currentAdminId {
+    return FirebaseAuth.instance.currentUser?.uid ?? '';
+  }
 
   void setCategory(String category) {
     selectedCategory = category;
@@ -100,10 +66,8 @@ class ItemController extends GetxController {
           SettableMetadata(contentType: 'image/jpeg'),
         );
 
-        // Wait for upload to complete
         await uploadTask.whenComplete(() {});
 
-        // Get download URL
         final downloadUrl = await storageRef.getDownloadURL();
         urls.add(downloadUrl);
       }
@@ -119,10 +83,11 @@ class ItemController extends GetxController {
       isLoading = true;
       update(['saveFunctionID']);
 
-      // Validate fields
+      // Validate input fields
       if (nameController.text.isEmpty ||
           desController.text.isEmpty ||
           priceController.text.isEmpty ||
+          quantityController.text.isEmpty ||  // Validate quantity
           selectedCategory == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please fill all fields')),
@@ -132,19 +97,27 @@ class ItemController extends GetxController {
         return;
       }
 
-      // Upload images and get URLs
+      // Validate admin is logged in
+      if (currentAdminId.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Admin authentication required')),
+        );
+        isLoading = false;
+        update(['saveFunctionID']);
+        return;
+      }
+
+      // Upload images
       List<String> imageUrls = [];
       if (imagesList.isNotEmpty) {
         imageUrls = await uploadImagesToStorage();
-        // Optional: Show a warning if upload failed but we're continuing anyway
+
         if (imageUrls.isEmpty) {
-          // ScaffoldMessenger.of(context).showSnackBar(
-          //   const SnackBar(content: Text('Note: Images could not be uploaded')),
-          // );
+          // Handle image upload failure if needed
         }
       }
 
-      // Generate unique ID
+      // Generate new item ID
       final itemId = const Uuid().v4();
 
       // Create item model
@@ -154,17 +127,28 @@ class ItemController extends GetxController {
         itemDescription: desController.text.trim(),
         itemPrice: priceController.text.trim(),
         itemCategory: selectedCategory!,
+        quantity: int.parse(quantityController.text.trim()), // Add quantity
         allowNotifications: isclicked,
         imageUrl: imageUrls.isNotEmpty ? imageUrls.join(',') : '',
         visibility: true,
         createdAt: Timestamp.now(),
+        adminId: currentAdminId, // Add adminId to item
       );
 
-      // Save to Firestore
+      // Add item to Firestore
       await FirebaseFirestore.instance
           .collection('items')
           .doc(itemId)
           .set(newItem.toMap());
+
+      // Update admin's items array
+      await FirebaseFirestore.instance
+          .collection('admins')
+          .doc(currentAdminId)
+          .set({
+        'items': FieldValue.arrayUnion([itemId])
+      }, SetOptions(merge: true));
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Item added successfully')),
       );
@@ -172,8 +156,9 @@ class ItemController extends GetxController {
       Navigator.pushReplacement(context,
           MaterialPageRoute(builder: (context) => const BottomBarScreen()));
     } catch (e) {
+      print('Error adding item: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Error adding item')),
+        SnackBar(content: Text('Error adding item: ${e.toString()}')),
       );
     } finally {
       isLoading = false;
@@ -186,6 +171,7 @@ class ItemController extends GetxController {
     desController.clear();
     priceController.clear();
     categoryController.clear();
+    quantityController.clear(); // Clear quantity
     selectedCategory = null;
     imagesList.clear();
     update();
@@ -197,11 +183,55 @@ class ItemController extends GetxController {
     desController.dispose();
     priceController.dispose();
     categoryController.dispose();
+    quantityController.dispose(); // Dispose quantity controller
     super.onClose();
   }
 }
 
-// Reusable text field widget
+class ItemModel {
+  final String uid;
+  final String itemName;
+  final String itemDescription;
+  final String itemPrice;
+  final String itemCategory;
+  final int quantity; // Add quantity field
+  final bool allowNotifications;
+  final String imageUrl;
+  final bool visibility;
+  final Timestamp createdAt;
+  final String adminId;
+
+  ItemModel({
+    required this.uid,
+    required this.itemName,
+    required this.itemDescription,
+    required this.itemPrice,
+    required this.itemCategory,
+    required this.quantity, // Make quantity required
+    required this.allowNotifications,
+    required this.imageUrl,
+    this.visibility = true,
+    required this.createdAt,
+    required this.adminId,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'uid': uid,
+      'itemName': itemName,
+      'itemDescription': itemDescription,
+      'itemPrice': itemPrice,
+      'itemCategory': itemCategory,
+      'quantity': quantity, // Include quantity in map
+      'allowNotifications': allowNotifications,
+      'imageUrl': imageUrl,
+      'visibility': visibility,
+      'createdAt': createdAt,
+      'adminId': adminId,
+    };
+  }
+}
+
 class TextFormFieldWithLabel extends StatelessWidget {
   final String label;
   final TextEditingController controller;
@@ -211,6 +241,7 @@ class TextFormFieldWithLabel extends StatelessWidget {
   final TextAlign textAlign;
   final double fontSize;
   final void Function(String)? onChanged;
+  final List<TextInputFormatter>? inputFormatters; // Add input formatters parameter
 
   const TextFormFieldWithLabel({
     super.key,
@@ -222,6 +253,7 @@ class TextFormFieldWithLabel extends StatelessWidget {
     this.textAlign = TextAlign.start,
     required this.fontSize,
     this.onChanged,
+    this.inputFormatters, // Add to constructor
   });
 
   @override
@@ -245,10 +277,12 @@ class TextFormFieldWithLabel extends StatelessWidget {
             border: Border.all(color: const Color(0xffE5E5E5), width: 1.5),
           ),
           child: TextFormField(
+            keyboardType:label=='Quantity'? TextInputType.number:TextInputType.name,
             controller: controller,
             validator: validator,
             onChanged: onChanged,
             textAlign: textAlign,
+            inputFormatters: inputFormatters, // Add input formatters
             decoration: InputDecoration(
               contentPadding:
                   EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
@@ -262,7 +296,6 @@ class TextFormFieldWithLabel extends StatelessWidget {
   }
 }
 
-// Image upload widget
 class ImageUploadWidget extends StatelessWidget {
   final ItemController controller;
 
@@ -432,7 +465,6 @@ class ImageUploadWidget extends StatelessWidget {
   }
 }
 
-// Notification toggle widget
 class NotificationToggle extends StatelessWidget {
   final ItemController controller;
 
@@ -505,10 +537,16 @@ class _AddItemsScreenState extends State<AddItemsScreen> {
   final ItemController controller = Get.put(ItemController());
 
   final _categories = [
+    "Bread",
     "Cake",
-    "Pizza",
-    "Lasania",
-    "Muffins",
+    "Pastry",
+    "Cookie",
+    "Muffin",
+    "Croissant",
+    "Danish",
+    "Donut",
+    "Cupcake",
+    "Pie"
   ];
 
   @override
@@ -520,10 +558,9 @@ class _AddItemsScreenState extends State<AddItemsScreen> {
             color: const Color(0xffEEEEE6),
             child: Column(
               children: [
-                // const TopNavBarClass(),
                 SizedBox(
-              height: 50.h,
-            ),
+                  height: 50.h,
+                ),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 21.w),
                   child: Form(
@@ -540,8 +577,6 @@ class _AddItemsScreenState extends State<AddItemsScreen> {
                           ),
                         ),
                         SizedBox(height: 20.h),
-
-                        // Item Name Field
                         TextFormFieldWithLabel(
                           label: "Item Name",
                           controller: controller.nameController,
@@ -552,8 +587,6 @@ class _AddItemsScreenState extends State<AddItemsScreen> {
                           onChanged: (_) {},
                         ),
                         SizedBox(height: 13.h),
-
-                        // Description Field
                         TextFormFieldWithLabel(
                           label: "Description",
                           controller: controller.desController,
@@ -565,8 +598,6 @@ class _AddItemsScreenState extends State<AddItemsScreen> {
                           onChanged: (_) {},
                         ),
                         SizedBox(height: 13.h),
-
-                        // Price Field
                         TextFormFieldWithLabel(
                           label: "Price",
                           controller: controller.priceController,
@@ -577,8 +608,6 @@ class _AddItemsScreenState extends State<AddItemsScreen> {
                           onChanged: (_) {},
                         ),
                         SizedBox(height: 13.h),
-
-                        // Category Field with Dropdown
                         TextFormFieldWithLabel(
                           label: "Category",
                           controller: controller.categoryController,
@@ -616,16 +645,31 @@ class _AddItemsScreenState extends State<AddItemsScreen> {
                           ),
                         ),
                         SizedBox(height: 13.h),
-
-                        // Notification Toggle
+                        // New Quantity Field
+                        TextFormFieldWithLabel(
+                          label: "Quantity",
+                          controller: controller.quantityController,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "Please Enter Quantity";
+                            }
+                            if (int.tryParse(value) == null) {
+                              return "Quantity must be a number";
+                            }
+                            return null;
+                          },
+                          width: 335.w,
+                          fontSize: 14.sp,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly
+                          ], // Only allow digits
+                          onChanged: (_) {},
+                        ),
+                        SizedBox(height: 13.h),
                         NotificationToggle(controller: controller),
                         SizedBox(height: 19.h),
-
-                        // Image Upload
                         ImageUploadWidget(controller: controller),
                         SizedBox(height: 25.h),
-
-                        // Buttons
                         SizedBox(
                           width: 333.w,
                           child: Row(

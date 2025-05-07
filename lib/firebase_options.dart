@@ -41,49 +41,47 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCPysoZjGaNn4KH8zorKPS99Y4pgxMxo_c',
-    appId: '1:455113974699:web:2c52d8942123ad1057a8ee',
-    messagingSenderId: '455113974699',
-    projectId: 'completefoodorderingappui',
-    authDomain: 'completefoodorderingappui.firebaseapp.com',
-    storageBucket: 'completefoodorderingappui.firebasestorage.app',
-    measurementId: 'G-NPWPRH8PV4',
+    apiKey: 'AIzaSyBKdcnAeaBTbbDm5jx-lnHYJL7VokXU468',
+    appId: '1:1036014210330:web:0814fea1705f3f2f4570a3',
+    messagingSenderId: '1036014210330',
+    projectId: 'ecomm-ff529',
+    authDomain: 'ecomm-ff529.firebaseapp.com',
+    storageBucket: 'ecomm-ff529.appspot.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBoV71MlkWKiinWVqp08Z_PlgsRQjU4r2I',
-    appId: '1:455113974699:android:c7b5dbec46adb5b657a8ee',
-    messagingSenderId: '455113974699',
-    projectId: 'completefoodorderingappui',
-    storageBucket: 'completefoodorderingappui.firebasestorage.app',
+    apiKey: 'AIzaSyAafWIziFx5vqXzc6hRb137lKCCHwOpJs0',
+    appId: '1:1036014210330:android:cf04df778bf6843e4570a3',
+    messagingSenderId: '1036014210330',
+    projectId: 'ecomm-ff529',
+    storageBucket: 'ecomm-ff529.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD1FZuyzbM_Pw2pcP9_iTQuNmAzSsbp3GE',
-    appId: '1:455113974699:ios:e15aca03ba7ef26557a8ee',
-    messagingSenderId: '455113974699',
-    projectId: 'completefoodorderingappui',
-    storageBucket: 'completefoodorderingappui.firebasestorage.app',
+    apiKey: 'AIzaSyDkRzqHyTxsBNGFJ78HxT9oPAd3SiHtKD4',
+    appId: '1:1036014210330:ios:54c2eddd9f5f0db44570a3',
+    messagingSenderId: '1036014210330',
+    projectId: 'ecomm-ff529',
+    storageBucket: 'ecomm-ff529.appspot.com',
     iosBundleId: 'com.example.bakeryadminapp',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyD1FZuyzbM_Pw2pcP9_iTQuNmAzSsbp3GE',
-    appId: '1:455113974699:ios:e15aca03ba7ef26557a8ee',
-    messagingSenderId: '455113974699',
-    projectId: 'completefoodorderingappui',
-    storageBucket: 'completefoodorderingappui.firebasestorage.app',
+    apiKey: 'AIzaSyDkRzqHyTxsBNGFJ78HxT9oPAd3SiHtKD4',
+    appId: '1:1036014210330:ios:54c2eddd9f5f0db44570a3',
+    messagingSenderId: '1036014210330',
+    projectId: 'ecomm-ff529',
+    storageBucket: 'ecomm-ff529.appspot.com',
     iosBundleId: 'com.example.bakeryadminapp',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCPysoZjGaNn4KH8zorKPS99Y4pgxMxo_c',
-    appId: '1:455113974699:web:e3b74f749798f6dc57a8ee',
-    messagingSenderId: '455113974699',
-    projectId: 'completefoodorderingappui',
-    authDomain: 'completefoodorderingappui.firebaseapp.com',
-    storageBucket: 'completefoodorderingappui.firebasestorage.app',
-    measurementId: 'G-CTH3WH2ZM8',
+    apiKey: 'AIzaSyASUgP_COcJAmA5zZLM-iiLMyd1tUltVtY',
+    appId: '1:1036014210330:web:d3c21993e60f4d784570a3',
+    messagingSenderId: '1036014210330',
+    projectId: 'ecomm-ff529',
+    authDomain: 'ecomm-ff529.firebaseapp.com',
+    storageBucket: 'ecomm-ff529.appspot.com',
   );
 
 }

@@ -11,19 +11,31 @@ class EditItemController extends GetxController {
   final desController = TextEditingController();
   final priceController = TextEditingController();
   final categoryController = TextEditingController();
+  final quantityController = TextEditingController();
 
   final RxBool isLoading = false.obs;
   final RxBool allowNotifications = true.obs;
   final RxString selectedCategory = ''.obs;
   final RxBool isImageLoading = false.obs;
-  
+
   final RxList<File> imagesList = <File>[].obs;
   final RxList<String> existingImageUrls = <String>[].obs;
   final RxList<String> imagesToDelete = <String>[].obs;
 
   late String itemId;
 
-  final List<String> categories = ["Cake", "Pizza", "Lasania", "Muffins"];
+  final List<String> categories = [
+    "Bread",
+    "Cake",
+    "Pastry",
+    "Cookie",
+    "Muffin",
+    "Croissant",
+    "Danish",
+    "Donut",
+    "Cupcake",
+    "Pie"
+  ].obs;
 
   void initWithItemId(String id) {
     itemId = id;
@@ -43,10 +55,21 @@ class EditItemController extends GetxController {
         nameController.text = data['itemName'] ?? '';
         desController.text = data['itemDescription'] ?? '';
         priceController.text = data['itemPrice'] ?? '';
-        selectedCategory.value = data['itemCategory'] ?? '';
-        categoryController.text = data['itemCategory'] ?? '';
+        quantityController.text =
+            data['quantity']?.toString() ?? '1'; 
+
+        String loadedCategory = data['itemCategory'] ?? '';
+        if (loadedCategory.isNotEmpty) {
+          if (!categories.contains(loadedCategory)) {
+            categories.add(loadedCategory);
+          }
+          selectedCategory.value = loadedCategory;
+          categoryController.text = loadedCategory;
+        }
+
         allowNotifications.value = data['allowNotifications'] ?? true;
-        if (data['imageUrl'] != null && data['imageUrl'].toString().isNotEmpty) {
+        if (data['imageUrl'] != null &&
+            data['imageUrl'].toString().isNotEmpty) {
           existingImageUrls.value = data['imageUrl'].toString().split(',');
         }
       }
@@ -93,8 +116,10 @@ class EditItemController extends GetxController {
     List<String> urls = [];
     try {
       for (var imageFile in imagesList) {
-        final fileName = '${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
-        final storageRef = FirebaseStorage.instance.ref().child('items/$fileName');
+        final fileName =
+            '${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
+        final storageRef =
+            FirebaseStorage.instance.ref().child('items/$fileName');
         final uploadTask = storageRef.putFile(
           imageFile,
           SettableMetadata(contentType: 'image/jpeg'),
@@ -117,6 +142,7 @@ class EditItemController extends GetxController {
       if (nameController.text.isEmpty ||
           desController.text.isEmpty ||
           priceController.text.isEmpty ||
+          quantityController.text.isEmpty || // Check quantity
           selectedCategory.value.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please fill all fields')),
@@ -134,6 +160,7 @@ class EditItemController extends GetxController {
         'itemName': nameController.text.trim(),
         'itemDescription': desController.text.trim(),
         'itemPrice': priceController.text.trim(),
+        'quantity': quantityController.text.trim(), // Save quantity
         'itemCategory': selectedCategory.value,
         'allowNotifications': allowNotifications.value,
         'imageUrl': allImageUrls.join(','),
@@ -170,6 +197,7 @@ class EditItemController extends GetxController {
     desController.dispose();
     priceController.dispose();
     categoryController.dispose();
+    quantityController.dispose(); // Dispose quantity controller
     super.onClose();
   }
 }
@@ -209,6 +237,8 @@ class EditItemScreen extends StatelessWidget {
                         _buildDescriptionField(),
                         SizedBox(height: 13.h),
                         _buildPriceField(),
+                        SizedBox(height: 13.h),
+                        _buildQuantityField(), // Added quantity field
                         SizedBox(height: 13.h),
                         _buildCategoryField(),
                         SizedBox(height: 13.h),
@@ -268,31 +298,45 @@ class EditItemScreen extends StatelessWidget {
     );
   }
 
+  // New method for quantity field
+  Widget _buildQuantityField() {
+    return TextFormFieldWithLabel(
+      label: "Quantity",
+      controller: controller.quantityController,
+      width: 335.w,
+      fontSize: 14.sp,
+    );
+  }
+
   Widget _buildCategoryField() {
     return TextFormFieldWithLabel(
       label: "Category",
       controller: controller.categoryController,
       width: 335.w,
       fontSize: 14.sp,
-      suffixIcon: DropdownButton<String>(
-        icon: const Padding(
-          padding: EdgeInsets.all(10.0),
-          child: Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xff666666)),
-        ),
-        isExpanded: true,
-        value: controller.selectedCategory.value.isEmpty ? null : controller.selectedCategory.value,
-        onChanged: (String? newValue) {
-          if (newValue != null) {
-            controller.setCategory(newValue);
-          }
-        },
-        items: controller.categories.map((String value) {
-          return DropdownMenuItem<String>(
-            value: value,
-            child: Text(value),
-          );
-        }).toList(),
-      ),
+      suffixIcon: Obx(() => DropdownButton<String>(
+            icon: const Padding(
+              padding: EdgeInsets.all(10.0),
+              child: Icon(Icons.keyboard_arrow_down_rounded,
+                  color: Color(0xff666666)),
+            ),
+            underline: const SizedBox(), // Remove underline
+            isExpanded: true,
+            value: controller.selectedCategory.value.isEmpty
+                ? null
+                : controller.selectedCategory.value,
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                controller.setCategory(newValue);
+              }
+            },
+            items: controller.categories.map((value) {
+              return DropdownMenuItem<String>(
+                value: value,
+                child: Text(value),
+              );
+            }).toList(),
+          )),
     );
   }
 
@@ -328,30 +372,36 @@ class EditItemScreen extends StatelessWidget {
           children: [
             ...controller.existingImageUrls.map((url) => Stack(
                   children: [
-                    Image.network(url, width: 70.w, height: 70.h, fit: BoxFit.cover),
+                    Image.network(url,
+                        width: 70.w, height: 70.h, fit: BoxFit.cover),
                     Positioned(
                       top: 0,
                       right: 0,
                       child: GestureDetector(
                         onTap: () {
-                          controller.deleteExistingImage(controller.existingImageUrls.indexOf(url));
+                          controller.deleteExistingImage(
+                              controller.existingImageUrls.indexOf(url));
                         },
-                        child: const Icon(Icons.close, color: Colors.red, size: 18),
+                        child: const Icon(Icons.close,
+                            color: Colors.red, size: 18),
                       ),
                     ),
                   ],
                 )),
             ...controller.imagesList.map((file) => Stack(
                   children: [
-                    Image.file(file, width: 70.w, height: 70.h, fit: BoxFit.cover),
+                    Image.file(file,
+                        width: 70.w, height: 70.h, fit: BoxFit.cover),
                     Positioned(
                       top: 0,
                       right: 0,
                       child: GestureDetector(
                         onTap: () {
-                          controller.deleteNewImage(controller.imagesList.indexOf(file));
+                          controller.deleteNewImage(
+                              controller.imagesList.indexOf(file));
                         },
-                        child: const Icon(Icons.close, color: Colors.red, size: 18),
+                        child: const Icon(Icons.close,
+                            color: Colors.red, size: 18),
                       ),
                     ),
                   ],
@@ -375,27 +425,23 @@ class EditItemScreen extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context) {
-    return 
-    GestureDetector(
+    return GestureDetector(
       onTap: () => controller.updateItem(context),
       child: Container(
         width: 335.w,
         height: 50,
         decoration: BoxDecoration(
-          color: Colors.green[800],
-          borderRadius: BorderRadius.circular(12)
+            color: Colors.green[800], borderRadius: BorderRadius.circular(12)),
+        child: const Center(
+          child: Text(
+            'Update Item',
+            style: TextStyle(color: Colors.white),
+          ),
         ),
-        child: const Center(child: Text('Update Item',style: TextStyle(color: Colors.white),),),
       ),
     );
-    // CustomButton(
-    //   text: "Update Item",
-    //   onPressed: () => controller.updateItem(context),
-    //   width: 335.w,
-    // );
   }
 }
-
 
 class TextFormFieldWithLabel extends StatelessWidget {
   final String label;

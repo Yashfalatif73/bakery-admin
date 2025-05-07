@@ -43,7 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       children: [
                         _buildCard(
                           label: "Total Revenue",
-                          value: "${userProvider.userData.revenue}k",
+                          value: "${userProvider.userData.revenue}",
                           bgColor: const Color(0xffCAE7E3),
                         ),
                         const Spacer(),
